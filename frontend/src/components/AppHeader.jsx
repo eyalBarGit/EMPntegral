@@ -1,3 +1,4 @@
+import InstallApp from "./InstallApp.jsx";
 const CHANNELS = [
   ["instagram", "Instagram"],
   ["whatsapp", "WhatsApp"],
@@ -48,6 +49,7 @@ export default function AppHeader({ meta, refreshing, onRefresh, onLogout, onTog
       </div></details>
 
       <div className="topbar__actions">
+        <InstallApp />
         <button type="button" role="switch" aria-checked={meta?.automationEnabled === true}
           className={`btn ${meta?.automationEnabled ? "btn--ok" : "btn--warn"}`}
           disabled={!meta || automationBusy} onClick={onToggleAutomation}

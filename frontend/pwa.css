@@ -1,0 +1,5 @@
+
+.install-app { position: relative; }
+.install-app__help { position: absolute; top: calc(100% + 12px); left: 0; z-index: 100; width: min(300px, 82vw); padding: 18px; background: #fff; color: #28232b; border: 1px solid #e5dfe8; border-radius: 12px; box-shadow: 0 8px 30px #0002; line-height: 1.6; }
+.install-app__help p { margin: 8px 0 12px; }
+@media (display-mode: standalone) { .topbar { padding-top: env(safe-area-inset-top); } .shell { padding-bottom: env(safe-area-inset-bottom); } }
