@@ -3,3 +3,30 @@
 .install-app__help { position: absolute; top: calc(100% + 12px); left: 0; z-index: 100; width: min(300px, 82vw); padding: 18px; background: #fff; color: #28232b; border: 1px solid #e5dfe8; border-radius: 12px; box-shadow: 0 8px 30px #0002; line-height: 1.6; }
 .install-app__help p { margin: 8px 0 12px; }
 @media (display-mode: standalone) { .topbar { padding-top: env(safe-area-inset-top); } .shell { padding-bottom: env(safe-area-inset-bottom); } }
+
+/* InstallApp wraps its button, so it needs the same compact sizing as sibling actions. */
+.topbar .install-app > .btn {
+  min-height: 29px;
+  padding: 4px 9px;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .topbar__actions {
+    order: 2;
+    flex: 0 0 100%;
+    width: 100%;
+    margin-inline: 0;
+    padding-inline: 0;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+  }
+  .topbar__actions > .btn, .topbar__actions > .install-app { flex: 0 0 auto; }
+  .install-app__help { left: auto; right: 0; max-width: calc(100vw - 48px); }
+}
+@media (max-width: 480px) {
+  .topbar .topbar__actions > .btn, .topbar .install-app > .btn { padding-inline: 7px; font-size: 0.72rem; }
+}
