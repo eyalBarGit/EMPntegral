@@ -4,7 +4,7 @@ import { api } from "../api.js";
 
 function clean(settings) {
   const { enabledSince, generalEnabledSince, ...value } = settings;
-  return { ...value, generalEnabled: value.generalEnabled ?? true, overrides: (value.overrides ?? []).map(({ enabledSince, ...rule }) => rule) };
+  return { ...value, generalEnabled: value.generalEnabled ?? false, overrides: (value.overrides ?? []).map(({ enabledSince, ...rule }) => rule) };
 }
 function ResponseFields({ value, onChange, prefix }) {
   const bytes = new TextEncoder().encode(value.privateText).length;
@@ -63,7 +63,7 @@ function Editor({ settings, onSaved, onError, onClose }) {
     <div className="settings-tabs"><button type="button" aria-pressed={tab === "general"} onClick={() => setTab("general")}>מענה כללי</button><button type="button" aria-pressed={tab === "specific"} onClick={() => setTab("specific")}>רילז ספציפיים · {draft.overrides.length}</button></div>
     <fieldset className="settings-fields" disabled={saving}>
     <div hidden={tab !== "general"}>
-      <label className="settings-enable"><span><strong>מענה ברירת מחדל</strong><small>חל על כל ריל שאין לו הגדרה ספציפית.</small></span><input type="checkbox" checked={draft.generalEnabled} onChange={event => patch({ generalEnabled: event.target.checked })} /></label>
+      <label className="settings-enable"><span><strong>מענה ברירת מחדל</strong><small>כשכבוי, רק רילז מהלשונית "רילז ספציפיים" מקבלים מענה. הדלקה תענה גם בכל ריל אחר.</small></span><input type="checkbox" checked={draft.generalEnabled} onChange={event => patch({ generalEnabled: event.target.checked })} /></label>
       {draft.scope === "selected" && <div className="settings-note"><p>ההגדרה הקיימת שלך נשמרה ומוגבלת ל־{draft.mediaIds.length} רילז שנבחרו.</p><button type="button" className="btn btn--sm" onClick={() => patch({ scope: "all_reels" })}>החל את המענה הכללי על כל הרילז</button><details><summary>ערוך את הבחירה הקיימת</summary>{renderPicker(true)}</details></div>}
       <ResponseFields value={draft} onChange={patch} />
     </div>

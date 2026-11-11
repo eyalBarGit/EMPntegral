@@ -2,42 +2,44 @@ import WelcomeEditor from "./WelcomeEditor.jsx";
 import { useState } from "react";
 import SettingsDialog, { useUnsavedChanges } from "./SettingsDialog.jsx";
 
+// Every phrase matches anywhere in the message; older "starts_with" rules are saved back as "contains".
+const asContains = list => list.map(rule => ({ mode: "contains", text: rule.text }));
+
 function RuleEditor({ rules, templates, onSave, onClose }) {
-  const [draft, setDraft] = useState(() => rules.map(rule => ({ ...rule })));
+  const [draft, setDraft] = useState(() => asContains(rules));
   const [editing, setEditing] = useState(null);
   const [text, setText] = useState("");
-  const [mode, setMode] = useState("starts_with");
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState("custom");
-  const dirty = JSON.stringify(draft) !== JSON.stringify(rules);
-  useUnsavedChanges(JSON.stringify(draft) !== JSON.stringify(rules) || Boolean(text.trim()));
+  const dirty = JSON.stringify(draft) !== JSON.stringify(asContains(rules));
+  useUnsavedChanges(dirty || Boolean(text.trim()));
   const validText = text.trim() && /[\p{L}\p{N}]/u.test(text);
   const reset = () => { setText(""); setEditing(null); };
   const add = () => {
     if (!validText || (editing === null && draft.length >= 50)) return;
-    const rule = { mode, text: text.trim() };
+    const rule = { mode: "contains", text: text.trim() };
     setDraft(current => editing === null ? [...current, rule] : current.map((item, index) => index === editing ? rule : item));
     reset();
   };
-  const edit = index => { setEditing(index); setText(draft[index].text); setMode(draft[index].mode); setTab("custom"); };
+  const edit = index => { setEditing(index); setText(draft[index].text); setTab("custom"); };
   const remove = index => { setDraft(current => current.filter((_, i) => i !== index)); reset(); };
   const save = async () => {
     setSaving(true);
     try { if (await onSave(draft)) onClose(); } finally { setSaving(false); }
   };
   return <div className="rules-editor rules-editor--compact">
-    <p className="rules-summary">המענה מתחיל כשמתאים <strong>לפחות ביטוי אחד</strong>. לחץ על ביטוי כדי לערוך אותו.</p>
+    <p className="rules-summary">המענה מתחיל כשההודעה מכילה <strong>לפחות ביטוי אחד</strong>, בכל מקום בהודעה. לחץ על ביטוי כדי לערוך אותו.</p>
     <div className="rule-groups">
-      {[["starts_with", "ההודעה מתחילה ב־"], ["contains", "ההודעה מכילה"]].map(([type, label]) => <section className="rule-group" key={type}>
-        <header><h3>{label}</h3><span>{draft.filter(rule => rule.mode === type).length}</span></header>
+      <section className="rule-group">
+        <header><h3>ההודעה מכילה</h3><span>{draft.length}</span></header>
         <div className="rule-tags">
-          {draft.map((rule, index) => rule.mode !== type ? null : <div className={"rule-tag" + (editing === index ? " is-editing" : "")} key={index}>
+          {draft.map((rule, index) => <div className={"rule-tag" + (editing === index ? " is-editing" : "")} key={index}>
             <button type="button" dir="auto" disabled={saving} onClick={() => edit(index)} title="ערוך ביטוי">{rule.text}</button>
             <button type="button" disabled={saving} aria-label={"מחק את הביטוי " + rule.text} onClick={() => remove(index)}>×</button>
           </div>)}
-          {!draft.some(rule => rule.mode === type) && <span className="rule-group__empty">לא הוגדרו ביטויים בקבוצה הזו</span>}
+          {!draft.length && <span className="rule-group__empty">לא הוגדרו ביטויים</span>}
         </div>
-      </section>)}
+      </section>
     </div>
     <section className="rule-composer">
       <div className="rule-composer__tabs" role="tablist" aria-label="הוספת ביטויים">
@@ -46,16 +48,15 @@ function RuleEditor({ rules, templates, onSave, onClose }) {
       </div>
       {tab === "custom" ? <div id="rule-custom-panel" role="tabpanel" aria-labelledby="rule-custom-tab">
         <div className="rule-composer__fields">
-          <label>התאמה<select className="input" value={mode} disabled={saving} onChange={event => setMode(event.target.value)}><option value="starts_with">מתחילה ב־</option><option value="contains">מכילה</option></select></label>
           <label>הביטוי<input className="input" dir="auto" maxLength={300} value={text} disabled={saving} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); add(); } }} placeholder="למשל: אשמח לקבל פרטים" /></label>
           <button type="button" className="btn btn--primary" disabled={saving || !validText || (editing === null && draft.length >= 50)} onClick={add}>{editing === null ? "הוסף" : "עדכן"}</button>
           {editing !== null && <button type="button" className="rule-action" onClick={reset}>בטל עריכה</button>}
         </div>
-        <p className="rules-help">אפשר להוסיף כמה ביטויים. פיסוק ואותיות גדולות אינם משנים את ההתאמה.</p>
+        <p className="rules-help">אפשר להוסיף כמה ביטויים. פיסוק ואותיות גדולות אינם משנים את ההתאמה, ו"קורס" תופס גם "הקורס" או "לקורס".</p>
       </div> : <div id="rule-templates-panel" role="tabpanel" aria-labelledby="rule-templates-tab" className="rule-template-options">
         {templates.map(value => {
           const selected = draft.some(rule => rule.text === value);
-          return <label key={value}><input type="checkbox" checked={selected} disabled={saving || (!selected && draft.length >= 50)} onChange={event => { reset(); setDraft(current => event.target.checked ? [...current, { mode: "starts_with", text: value }] : current.filter(rule => rule.text !== value)); }} /><span dir="auto">{value}</span></label>;
+          return <label key={value}><input type="checkbox" checked={selected} disabled={saving || (!selected && draft.length >= 50)} onChange={event => { reset(); setDraft(current => event.target.checked ? [...current, { mode: "contains", text: value }] : current.filter(rule => rule.text !== value)); }} /><span dir="auto">{value}</span></label>;
         })}
       </div>}
     </section>
