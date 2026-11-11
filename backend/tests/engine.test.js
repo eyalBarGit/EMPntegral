@@ -1,3 +1,4 @@
+vi.mock("../src/channels/email.js", () => ({ sendPhoneReceivedEmail: vi.fn(async () => true) }));
 import { setWelcomeText } from "../src/db/settings.js";
 import { setTriggerRules } from "../src/db/settings.js";
 import { setAutomation, getAutomation } from "../src/db/settings.js";

@@ -1,3 +1,4 @@
+import { sendPhoneReceivedEmail } from "../channels/email.js";
 import { config } from "../config.js";
 import { escapeHtml, sendAlert } from "../channels/telegram.js";
 import { formatForDisplay, toWaMe } from "../lib/phone.js";
@@ -41,7 +42,7 @@ export function alertPhoneReceived(lead) {
     `📍 מקור: ${escapeHtml(lead.source)}`,
     `🕐 ${formatInZone(new Date(lead.created_at), config.TIMEZONE)}`,
   ].join("\n");
-  return sendAlert(text, baseButtons(lead));
+  return Promise.all([sendAlert(text, baseButtons(lead)), sendPhoneReceivedEmail(lead)]);
 }
 
 export function alertAvailableNow(lead) {

@@ -1,3 +1,8 @@
+process.env.EMAIL_HOST = "";
+process.env.ADMIN_NOTIFY_EMAIL = "";
+// Never deliver real email from automated tests.
+process.env.SMTP_HOST = "";
+process.env.LEAD_ALERT_EMAIL = "";
 import { afterAll, beforeAll, beforeEach, inject } from "vitest";
 
 // Assigned at the top level so that every value is in place before the test

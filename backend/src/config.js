@@ -60,6 +60,21 @@ const schema = z.object({
     .default("unknown"),
   DEFAULT_COUNTRY_CODE: z.string().default("972"),
 
+  EMAIL_HOST: z.string().default(""),
+  EMAIL_PORT: z.coerce.number().int().min(1).max(65535).default(465),
+  EMAIL_USER: z.string().default(""),
+  EMAIL_PASS: z.string().default(""),
+  EMAIL_FROM_NAME: z.string().default("EMP School"),
+  ADMIN_NOTIFY_EMAIL: z.string().default(""),
+
+  SMTP_HOST: z.string().default(""),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_SECURE: boolish(false),
+  SMTP_USER: z.string().default(""),
+  SMTP_PASS: z.string().default(""),
+  SMTP_FROM: z.string().default(""),
+  LEAD_ALERT_EMAIL: z.string().default(""),
+
   TELEGRAM_BOT_TOKEN: z.string().default(""),
   TELEGRAM_CHAT_ID: z.string().default(""),
 
