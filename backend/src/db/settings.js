@@ -37,14 +37,19 @@ export async function setTriggerRules(rules) {
 }
 
 export const DEFAULT_COMMENT_SETTINGS = {
-  enabled: false, generalEnabled: true, overrides: [], match: "all", keywords: [], scope: "all_reels", mediaIds: [],
+  enabled: false, generalEnabled: false, overrides: [], match: "all", keywords: [], scope: "all_reels", mediaIds: [],
   publicText: "שלחתי לך פרטים בפרטי 🙌", privateText: "היי! תודה על ההתעניינות. איך אפשר לעזור?", enabledSince: null,
 };
 export async function getCommentSettings() {
   const doc = await settings().findOne({ _id: "comment_automation" });
   if (!doc) return { ...DEFAULT_COMMENT_SETTINGS };
-  const { _id, ...value } = doc;
-  return { ...DEFAULT_COMMENT_SETTINGS, ...value };
+  const { _id, generalOptIn, ...value } = doc;
+  // The general reply used to be on by default and answered every reel. Only an
+  // explicit opt-in saved after that change keeps it on. Older saves read as off,
+  // except the legacy picker, where the owner did choose the reels themselves.
+  const legacyChoice = value.scope === "selected" && value.generalEnabled !== false;
+  const generalEnabled = generalOptIn === undefined ? legacyChoice : generalOptIn === true && value.generalEnabled === true;
+  return { ...DEFAULT_COMMENT_SETTINGS, ...value, generalEnabled };
 }
 export async function setCommentSettings(value) {
   const previous = await getCommentSettings();
@@ -54,7 +59,7 @@ export async function setCommentSettings(value) {
     const old = previous.overrides?.find(item => item.mediaId === rule.mediaId);
     return { ...rule, enabledSince: rule.enabled && !old?.enabled ? new Date() : old?.enabledSince ?? null };
   });
-  await settings().updateOne({ _id: "comment_automation" }, { $set: { ...value, overrides, enabledSince, generalEnabledSince } }, { upsert: true });
+  await settings().updateOne({ _id: "comment_automation" }, { $set: { ...value, generalOptIn: value.generalEnabled === true, overrides, enabledSince, generalEnabledSince } }, { upsert: true });
   return getCommentSettings();
 }
 

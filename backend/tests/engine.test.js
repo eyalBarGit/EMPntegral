@@ -284,6 +284,11 @@ describe("saved trigger configuration", () => {
     await handleInstagramMessage(inbound("היי רוצה לשמוע על לימודי מוזיקה אצלכם", "custom.2"));
     expect(igSendText).toHaveBeenCalledTimes(1);
   });
+  it("answers a default phrase that follows a greeting, even from an old starts_with rule", async () => {
+    await setTriggerRules([{ mode: "starts_with", text: "אשמח לקבל פרטים" }]);
+    const result = await handleInstagramMessage(inbound("היי! אשמח לקבל פרטים על הקורס", "greeting.1"));
+    expect(result.action).toBe("welcome_sent");
+  });
 });
 
 describe("editable opening message", () => {

@@ -62,7 +62,7 @@ apiRouter.patch("/settings/triggers", async (req, res) => {
 });
 
 const commentSchema = z.object({
-  enabled: z.boolean(), generalEnabled: z.boolean().default(true),
+  enabled: z.boolean(), generalEnabled: z.boolean().default(false),
   overrides: z.array(z.object({
     mediaId: z.string().regex(/^\d+$/), enabled: z.boolean(),
     match: z.enum(["all", "keywords"]),

@@ -239,8 +239,8 @@ describe("dashboard API", () => {
     const { enabledSince, ...settings } = meta.commentSettings;
     const update = (body, authenticated = true) => fetch(baseUrl + "/api/settings/comments", { method: "PATCH", headers: { "Content-Type": "application/json", ...(authenticated ? { cookie } : {}) }, body: JSON.stringify(body) });
     expect((await update(settings, false)).status).toBe(401);
-    expect((await update({ ...settings, enabled: true, scope: "selected", mediaIds: [] })).status).toBe(400);
-    expect((await update({ ...settings, enabled: true, match: "keywords", keywords: [] })).status).toBe(400);
+    expect((await update({ ...settings, enabled: true, generalEnabled: true, scope: "selected", mediaIds: [] })).status).toBe(400);
+    expect((await update({ ...settings, enabled: true, generalEnabled: true, match: "keywords", keywords: [] })).status).toBe(400);
     expect((await update({ ...settings, enabled: true, scope: "selected", mediaIds: ["123"], publicText: "תגובה", privateText: "פרטים" })).status).toBe(200);
     const saved = await fetch(baseUrl + "/api/meta", { headers: { cookie } }).then(r => r.json());
     expect(saved.commentSettings.mediaIds).toEqual(["123"]);

@@ -10,7 +10,8 @@ import crypto from "node:crypto";
 import { createApp } from "../src/app.js";
 import { config } from "../src/config.js";
 const comment = (extra = {}) => ({ id: "c1", text: "אפשר פרטים", from: { id: "person1", username: "test" }, media: { id: "123" }, ...extra });
-const enable = async (extra = {}) => setCommentSettings({ ...(await getCommentSettings()), enabled: true, ...extra });
+// Most tests exercise the general reply, which is now opt-in.
+const enable = async (extra = {}) => setCommentSettings({ ...(await getCommentSettings()), enabled: true, generalEnabled: true, ...extra });
 beforeEach(() => {
   vi.resetAllMocks();
   details.mockResolvedValue({ id: "c1" });
@@ -116,8 +117,23 @@ describe("general and per-reel replies", () => {
     await handleInstagramComment(comment({ id: "c2", media: { id: "456" } }));
     expect(privateReply).toHaveBeenCalledTimes(1);
   });
+  it("answers only configured reels unless the general reply is switched on", async () => {
+    await setCommentSettings({ ...(await getCommentSettings()), enabled: true, overrides: [specific()] });
+    expect((await getCommentSettings()).generalEnabled).toBe(false);
+    await handleInstagramComment(comment({ id: "unrelated", media: { id: "456" } }));
+    expect(publicReply).not.toHaveBeenCalled();
+    await handleInstagramComment(comment());
+    expect(privateReply).toHaveBeenCalledWith("c1", "מדריך ייעודי לריל");
+  });
+  it("turns off a general reply saved before it became opt-in", async () => {
+    await getDb().collection("settings").updateOne({ _id: "comment_automation" }, { $set: { enabled: true, generalEnabled: true, scope: "all_reels", overrides: [] }, $unset: { generalOptIn: "" } }, { upsert: true });
+    expect((await getCommentSettings()).generalEnabled).toBe(false);
+    await handleInstagramComment(comment());
+    expect(publicReply).not.toHaveBeenCalled();
+  });
   it("preserves legacy selected-reel scope and stored text", async () => {
-    await enable({ scope: "selected", mediaIds: ["123"], publicText: "הנוסח הקיים", privateText: "ההודעה הקיימת" });
+    await getDb().collection("settings").updateOne({ _id: "comment_automation" }, { $set: { enabled: true, enabledSince: null, generalEnabled: true, scope: "selected", mediaIds: ["123"], overrides: [], publicText: "הנוסח הקיים", privateText: "ההודעה הקיימת" }, $unset: { generalOptIn: "", generalEnabledSince: "" } }, { upsert: true });
+    expect((await getCommentSettings()).generalEnabled).toBe(true);
     await handleInstagramComment(comment({ id: "other", media: { id: "456" } }));
     expect(publicReply).not.toHaveBeenCalled();
     await handleInstagramComment(comment());
