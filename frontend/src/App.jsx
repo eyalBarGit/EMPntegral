@@ -239,12 +239,12 @@ export default function App() {
       />
 
       {page === "automations" && <main className="automation-home">
-        <header className="automation-home__heading"><div><h1>אוטומציות אינסטגרם</h1><p>בחר מתי לענות ומה לשלוח.</p></div><span className="automation-state">{meta?.automationEnabled ? "המענה הכללי פעיל" : "המענה הכללי כבוי"}</span></header>
+        <header className="automation-home__heading"><div><h1>אוטומציות אינסטגרם</h1><p>בחר מתי לענות ומה לשלוח.</p></div><span className="automation-state">{meta?.automationEnabled ? "המענה האוטומטי פעיל" : "המענה האוטומטי כבוי: לא עונים לכלום"}</span></header>
         <div className="automation-home__grid">
           <article className="automation-card"><span className="automation-card__category">הודעות פרטיות</span><h2>מענה לפנייה נכנסת</h2><p>שולח תשובה כשהודעה חדשה מתאימה לביטויים שבחרת.</p><div className="automation-card__preview"><small>נוסח הפתיחה</small><p dir="auto">{meta?.welcomeText || "טוען…"}</p></div>
       <AutomationRules rules={meta?.triggerRules} templates={meta?.triggerTemplates} onSave={saveTriggerRules} welcomeText={meta?.welcomeText} onError={handleError} onWelcomeSaved={result => { setMeta(current => ({ ...current, ...result })); push("הודעת הפתיחה נשמרה"); }} />
           </article>
-          <article className="automation-card"><span className="automation-card__category">תגובות לרילז</span><h2>מתגובה לשיחה בפרטי</h2><p>תגובה ציבורית ולאחריה הודעה פרטית, לפי הרילז והמילים שבחרת.</p><div className="automation-card__preview"><small>{meta?.commentSettings?.generalEnabled === false ? "מענה כללי כבוי" : meta?.commentSettings?.scope === "selected" ? "מענה כללי לרילז שנבחרו" : "מענה כללי לכל הרילז"} · {meta?.commentSettings?.overrides?.length ?? 0} הגדרות ספציפיות</small><p dir="auto">{meta?.commentSettings?.privateText || "טוען…"}</p></div>
+          <article className="automation-card"><span className="automation-card__category">תגובות לרילז</span><h2>מתגובה לשיחה בפרטי</h2><p>תגובה ציבורית ולאחריה הודעה פרטית, לפי הרילז והמילים שבחרת.</p><div className="automation-card__preview"><small>ההודעה הפרטית שנשלחת</small><p dir="auto">{(meta?.commentSettings?.overrides?.find(rule => rule.enabled) ?? meta?.commentSettings)?.privateText || "טוען…"}</p></div>
       <CommentAutomation settings={meta?.commentSettings} failed={meta?.failedCommentRuns} onError={handleError} onSaved={result => { setMeta(current => ({ ...current, ...result })); push("הגדרות התגובות נשמרו"); }} />
           </article>
         </div>

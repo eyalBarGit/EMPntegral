@@ -1,76 +1,98 @@
-import WelcomeEditor from "./WelcomeEditor.jsx";
 import { useState } from "react";
 import SettingsDialog, { useUnsavedChanges } from "./SettingsDialog.jsx";
+import { api } from "../api.js";
 
-// Every phrase matches anywhere in the message; older "starts_with" rules are saved back as "contains".
-const asContains = list => list.map(rule => ({ mode: "contains", text: rule.text }));
+// Same idea as the server's matching: punctuation, case and spacing don't matter.
+const normalize = text => String(text ?? "").normalize("NFKC").toLowerCase().replace(/\p{M}/gu, "").replace(/[’'"]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+/** Every phrase matches anywhere; older "starts_with" rules and duplicates fold into one list. */
+function toPhrases(rules) {
+  const seen = new Set();
+  return rules.map(rule => rule.text.trim()).filter(text => {
+    const key = normalize(text);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+const toRules = phrases => phrases.map(text => ({ mode: "contains", text }));
 
-function RuleEditor({ rules, templates, onSave, onClose }) {
-  const [draft, setDraft] = useState(() => asContains(rules));
-  const [editing, setEditing] = useState(null);
+function Editor({ rules, templates, welcomeText, onSaveRules, onWelcomeSaved, onError, onClose }) {
+  const initialPhrases = toPhrases(rules);
+  const [phrases, setPhrases] = useState(initialPhrases);
   const [text, setText] = useState("");
+  const [welcome, setWelcome] = useState(welcomeText ?? "");
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState("custom");
-  const dirty = JSON.stringify(draft) !== JSON.stringify(asContains(rules));
+  // Compared with the cleaned list, so folding duplicates on open is not a change the owner made.
+  const rulesDirty = JSON.stringify(phrases) !== JSON.stringify(initialPhrases);
+  const welcomeDirty = welcome !== (welcomeText ?? "");
+  const dirty = rulesDirty || welcomeDirty;
   useUnsavedChanges(dirty || Boolean(text.trim()));
-  const validText = text.trim() && /[\p{L}\p{N}]/u.test(text);
-  const reset = () => { setText(""); setEditing(null); };
-  const add = () => {
-    if (!validText || (editing === null && draft.length >= 50)) return;
-    const rule = { mode: "contains", text: text.trim() };
-    setDraft(current => editing === null ? [...current, rule] : current.map((item, index) => index === editing ? rule : item));
-    reset();
-  };
-  const edit = index => { setEditing(index); setText(draft[index].text); setTab("custom"); };
-  const remove = index => { setDraft(current => current.filter((_, i) => i !== index)); reset(); };
+  const bytes = new TextEncoder().encode(welcome.trim()).length;
+  const has = value => phrases.some(item => normalize(item) === normalize(value));
+  const canAdd = normalize(text) && !has(text) && phrases.length < 50;
+  const add = value => { if (normalize(value) && !has(value) && phrases.length < 50) setPhrases(current => [...current, value.trim()]); };
+  const suggestions = templates.filter(value => !has(value));
+  const valid = welcome.trim() && bytes <= 1000;
+
   const save = async () => {
     setSaving(true);
-    try { if (await onSave(draft)) onClose(); } finally { setSaving(false); }
+    try {
+      if (welcomeDirty) onWelcomeSaved(await api.setWelcomeText(welcome));
+      if (rulesDirty && !(await onSaveRules(toRules(phrases)))) return;
+      onClose();
+    } catch (error) { onError(error); } finally { setSaving(false); }
   };
-  return <div className="rules-editor rules-editor--compact">
-    <p className="rules-summary">המענה מתחיל כשההודעה מכילה <strong>לפחות ביטוי אחד</strong>, בכל מקום בהודעה. לחץ על ביטוי כדי לערוך אותו.</p>
-    <div className="rule-groups">
-      <section className="rule-group">
-        <header><h3>ההודעה מכילה</h3><span>{draft.length}</span></header>
-        <div className="rule-tags">
-          {draft.map((rule, index) => <div className={"rule-tag" + (editing === index ? " is-editing" : "")} key={index}>
-            <button type="button" dir="auto" disabled={saving} onClick={() => edit(index)} title="ערוך ביטוי">{rule.text}</button>
-            <button type="button" disabled={saving} aria-label={"מחק את הביטוי " + rule.text} onClick={() => remove(index)}>×</button>
-          </div>)}
-          {!draft.length && <span className="rule-group__empty">לא הוגדרו ביטויים</span>}
-        </div>
-      </section>
+
+  return <div className="reel-editor">
+    <div className={"reel-summary is-" + (phrases.length ? "on" : "off")} role="status">
+      <strong>מה קורה עכשיו</strong>
+      <p>{phrases.length
+        ? `מי שכותב לך בפעם הראשונה הודעה שמכילה אחד מ־${phrases.length} הביטויים, מקבל את הודעת הפתיחה.`
+        : "אין ביטויים, אז לא נשלחת הודעת פתיחה לאף אחד."}</p>
+      <p>הודעות אחרות נשמרות בתיבת ההודעות בלי מענה.</p>
+      <ol className="reel-flow" aria-label="סדר הפעולות"><li>מישהו כותב ביטוי</li><li>נשלחת הודעת הפתיחה</li><li>הוא שולח מספר טלפון</li><li>הליד עובר ל־CRM</li></ol>
     </div>
-    <section className="rule-composer">
-      <div className="rule-composer__tabs" role="tablist" aria-label="הוספת ביטויים">
-        <button type="button" role="tab" aria-selected={tab === "custom"} aria-controls="rule-custom-panel" id="rule-custom-tab" onClick={() => setTab("custom")}>{editing === null ? "ביטוי חדש" : "עריכת ביטוי"}</button>
-        <button type="button" role="tab" aria-selected={tab === "templates"} aria-controls="rule-templates-panel" id="rule-templates-tab" onClick={() => setTab("templates")}>שבלונות מוכנות</button>
-      </div>
-      {tab === "custom" ? <div id="rule-custom-panel" role="tabpanel" aria-labelledby="rule-custom-tab">
-        <div className="rule-composer__fields">
-          <label>הביטוי<input className="input" dir="auto" maxLength={300} value={text} disabled={saving} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); add(); } }} placeholder="למשל: אשמח לקבל פרטים" /></label>
-          <button type="button" className="btn btn--primary" disabled={saving || !validText || (editing === null && draft.length >= 50)} onClick={add}>{editing === null ? "הוסף" : "עדכן"}</button>
-          {editing !== null && <button type="button" className="rule-action" onClick={reset}>בטל עריכה</button>}
+
+    <fieldset className="settings-fields" disabled={saving}>
+      <section className="reply-steps">
+        <div className="reply-step">
+          <span className="reply-step__title"><b>1</b>מתי לענות? <small>כשההודעה מכילה אחד מהביטויים, בכל מקום בהודעה</small></span>
+          {phrases.length ? <ul className="phrase-list">{phrases.map(phrase => <li key={phrase}>
+            <span dir="auto">{phrase}</span>
+            <button type="button" aria-label={"מחק את הביטוי " + phrase} onClick={() => setPhrases(current => current.filter(item => item !== phrase))}>×</button>
+          </li>)}</ul> : <p className="rules-help">עוד אין ביטויים. הוסף לפחות אחד.</p>}
+          <div className="phrase-add">
+            <input className="input" dir="auto" maxLength={300} value={text} aria-label="ביטוי חדש" placeholder="ביטוי חדש, למשל: כמה עולה" onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); if (canAdd) { add(text); setText(""); } } }} />
+            <button type="button" className="btn btn--sm btn--primary" disabled={!canAdd} onClick={() => { add(text); setText(""); }}>הוסף</button>
+          </div>
+          <small className="phrase-help">{text.trim() && has(text) ? "הביטוי הזה כבר ברשימה." : "פיסוק ואותיות גדולות לא משנים. \"קורס\" תופס גם \"הקורס\" ו\"לקורס\"."}</small>
+          {suggestions.length > 0 && <details className="phrase-suggestions">
+            <summary>ביטויים מוכנים ({suggestions.length})</summary>
+            <div>{suggestions.map(value => <button type="button" key={value} dir="auto" onClick={() => add(value)}>+ {value}</button>)}</div>
+          </details>}
         </div>
-        <p className="rules-help">אפשר להוסיף כמה ביטויים. פיסוק ואותיות גדולות אינם משנים את ההתאמה, ו"קורס" תופס גם "הקורס" או "לקורס".</p>
-      </div> : <div id="rule-templates-panel" role="tabpanel" aria-labelledby="rule-templates-tab" className="rule-template-options">
-        {templates.map(value => {
-          const selected = draft.some(rule => rule.text === value);
-          return <label key={value}><input type="checkbox" checked={selected} disabled={saving || (!selected && draft.length >= 50)} onChange={event => { reset(); setDraft(current => event.target.checked ? [...current, { mode: "contains", text: value }] : current.filter(rule => rule.text !== value)); }} /><span dir="auto">{value}</span></label>;
-        })}
-      </div>}
-    </section>
-    {draft.length === 0 && <p className="rules-help">בלי ביטויים, לא יתחיל מענה אוטומטי לפניות חדשות.</p>}
-    <footer className="settings-dialog__footer"><span className="muted" role="status">{dirty ? "יש שינויים שלא נשמרו" : draft.length + " ביטויים מוגדרים"}</span><div><button type="button" className="btn btn--ghost" disabled={saving} onClick={onClose}>ביטול</button><button type="button" className="btn btn--primary" disabled={saving || !dirty || Boolean(text.trim())} title={text.trim() ? "יש להוסיף או לעדכן את הביטוי לפני השמירה" : undefined} onClick={save}>{saving ? "שומר…" : "שמור שינויים"}</button></div></footer>
+
+        <label className="message-field reply-step">
+          <span className="reply-step__title"><b>2</b>מה לשלוח? <small>הודעת הפתיחה, נשלחת פעם אחת לכל אדם</small></span>
+          <textarea className="input" dir="auto" rows={8} value={welcome} onChange={event => setWelcome(event.target.value)} />
+          <span className="message-field__meta"><span>כדאי לסיים בבקשה למספר טלפון. כשהוא שולח מספר, הוא עובר ל־CRM.</span><span className={bytes > 1000 ? "is-error" : undefined}>{bytes}/1000 בתים</span></span>
+        </label>
+      </section>
+    </fieldset>
+
+    {!valid && <p className="rules-help is-error" role="status">הודעת הפתיחה ריקה או ארוכה מ־1000 בתים.</p>}
+    <footer className="settings-dialog__footer"><span className="muted" role="status">{dirty ? "יש שינויים שלא נשמרו" : "כל השינויים שמורים"}</span><div><button type="button" className="btn btn--ghost" disabled={saving} onClick={onClose}>ביטול</button><button type="button" className="btn btn--primary" disabled={saving || !dirty || !valid || Boolean(text.trim())} title={text.trim() ? "לחץ \"הוסף\" על הביטוי שכתבת, או מחק אותו, לפני השמירה" : undefined} onClick={save}>{saving ? "שומר…" : "שמור שינויים"}</button></div></footer>
   </div>;
 }
 
 export default function AutomationRules({ rules, templates, onSave, welcomeText, onWelcomeSaved, onError }) {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("text");
+  const count = rules ? toPhrases(rules).length : 0;
   return <section className="automation-rules settings-launcher">
-    <div><strong>מענה להודעות</strong><span>{rules?.length ?? 0} כללי פתיחה</span></div>
+    <div><strong>מענה להודעות</strong><span>{count ? `עונה להודעות עם אחד מ־${count} ביטויים` : "אין ביטויים, לא עונה"}</span></div>
     <button type="button" className="btn btn--sm" disabled={!rules} aria-haspopup="dialog" onClick={() => setOpen(true)}>ערוך אוטומציה</button>
-    {open && rules && <SettingsDialog title="מענה להודעות" subtitle="עריכת התשובה והביטויים שמפעילים אותה" onClose={() => setOpen(false)}><div className="settings-tabs"><button type="button" aria-pressed={activeTab === "text"} onClick={() => setActiveTab("text")}>נוסח התשובה</button><button type="button" aria-pressed={activeTab === "rules"} onClick={() => setActiveTab("rules")}>מתי לענות · {rules.length}</button></div><div hidden={activeTab !== "text"}><WelcomeEditor text={welcomeText} onSaved={onWelcomeSaved} onError={onError} onClose={() => setOpen(false)} /></div><div hidden={activeTab !== "rules"}><RuleEditor rules={rules} templates={templates ?? []} onSave={onSave} onClose={() => setOpen(false)} /></div></SettingsDialog>}
+    {open && rules && <SettingsDialog title="מענה להודעות" subtitle="מי שכותב לך ביטוי שבחרת מקבל את הודעת הפתיחה" onClose={() => setOpen(false)}>
+      <Editor rules={rules} templates={templates ?? []} welcomeText={welcomeText} onSaveRules={onSave} onWelcomeSaved={onWelcomeSaved} onError={onError} onClose={() => setOpen(false)} />
+    </SettingsDialog>}
   </section>;
 }

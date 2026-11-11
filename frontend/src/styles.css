@@ -1284,3 +1284,66 @@ input[type="checkbox"], input[type="radio"] { accent-color: #872c9b; }
 .reel-picker__item img { width: 42px; height: 58px; object-fit: cover; border-radius: 4px; }
 .reel-picker__item > div { flex: 1; display: grid; gap: 4px; font-size: 0.8rem; }
 .reel-picker__item .link { font-size: 0.74rem; }
+
+/* Reel comments editor: one screen, read top to bottom. */
+.reel-summary { border: 1px solid #e5d4ea; background: #fbf6fc; border-radius: 8px; padding: 14px 16px; margin-bottom: 22px; }
+.reel-summary.is-off { border-color: var(--line); background: var(--bg-sunken); }
+.reel-summary strong { display: block; font-size: 0.8rem; color: var(--accent); margin-bottom: 6px; }
+.reel-summary.is-off strong { color: var(--text-dim); }
+.reel-summary p { margin: 0; font-size: 0.92rem; line-height: 1.7; color: var(--text); }
+.reel-flow { display: flex; flex-wrap: wrap; gap: 6px 22px; list-style: none; margin: 12px 0 0; padding: 0; counter-reset: flow; font-size: 0.78rem; color: var(--text-dim); }
+.reel-flow li { counter-increment: flow; position: relative; display: flex; align-items: center; gap: 6px; }
+.reel-flow li::before { content: counter(flow); display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #f0e3f4; color: var(--accent); font-size: 0.7rem; font-weight: 600; }
+.reel-flow li + li::after { content: "←"; position: absolute; inset-inline-start: -17px; color: var(--text-faint); }
+.settings-fields:disabled .reel-section, .settings-fields:disabled .reel-advanced { opacity: 0.55; }
+.reel-section header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.reel-section h3 { margin: 0; font-size: 0.95rem; }
+.reel-section header span { font-size: 0.78rem; color: var(--text-dim); background: var(--bg-sunken); border: 1px solid var(--line-soft); border-radius: 99px; padding: 0 8px; }
+.reel-section .rules-help { margin: 4px 0 12px; }
+.chosen-reels { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.chosen-reel { border: 1px solid var(--line); border-radius: 8px; background: var(--bg-raised); overflow: hidden; }
+.chosen-reel.is-open { border-color: #c99ad4; }
+.chosen-reel__row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; background: none; border: 0; font: inherit; color: var(--text); text-align: start; cursor: pointer; }
+.chosen-reel__row:hover { background: #fcf8fd; }
+.chosen-reel__row img, .chosen-reel__thumb { width: 38px; height: 52px; flex: none; object-fit: cover; border-radius: 4px; background: var(--line-soft); }
+.chosen-reel__text { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.chosen-reel__text > span { font-size: 0.84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chosen-reel__text small { font-size: 0.76rem; color: var(--ok); }
+.chosen-reel.is-paused .chosen-reel__text small { color: var(--warn); }
+.chosen-reel__action { font-size: 0.8rem; color: var(--accent); flex: none; }
+.chosen-reel__editor { border-top: 1px solid var(--line-soft); padding: 4px 14px 14px; background: #fdfbfe; }
+.chosen-reel__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 0.82rem; }
+.chosen-reel__foot .rule-action--delete { margin-inline-start: auto; }
+.reply-steps { display: grid; gap: 18px; margin-top: 14px; }
+.reply-step { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 8px; }
+.reply-step legend, .reply-step__title { font-size: 0.87rem; color: #3d4757; font-weight: 600; padding: 0; margin-bottom: 2px; }
+.reply-step__title small, .reply-step legend small { font-weight: 400; color: var(--text-faint); font-size: 0.75rem; margin-inline-start: 4px; }
+.reply-step b { display: inline-grid; place-items: center; background: #f3edf6; border-radius: 50%; width: 22px; height: 22px; margin-inline-end: 7px; color: #83608e; font-size: 0.75rem; }
+.reply-step__extra { margin-top: 4px; }
+.reply-choice { display: flex; align-items: center; gap: 8px; font-size: 0.86rem; color: var(--text); cursor: pointer; }
+.reply-choice input { width: 16px; height: 16px; accent-color: #872c9b; margin: 0; }
+.reel-picker__foot { display: flex; gap: 8px; justify-content: space-between; }
+.reel-advanced { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 14px; }
+.reel-advanced > summary { cursor: pointer; font-size: 0.88rem; color: var(--text-dim); }
+.reel-advanced > summary:hover { color: var(--text); }
+.reel-advanced > .rules-help { margin: 10px 0 12px; }
+.is-error, .rules-help.is-error { color: var(--danger); }
+@media (max-width: 560px) {
+  .reel-flow { flex-direction: column; gap: 6px; }
+  .reel-flow li + li::after { display: none; }
+}
+.phrase-list { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 7px; }
+.phrase-list li { display: inline-flex; align-items: center; border: 1px solid var(--line); background: var(--bg-sunken); border-radius: 99px; font-size: 0.82rem; overflow: hidden; }
+.phrase-list li span { padding: 5px 12px; }
+.phrase-list button { border: 0; border-inline-start: 1px solid var(--line-soft); background: none; padding: 5px 10px; color: var(--text-faint); cursor: pointer; font: inherit; }
+.phrase-list button:hover { color: var(--danger); background: #fbf1f1; }
+.reel-editor .phrase-add { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin-top: 6px; }
+.reel-editor .phrase-add .input { flex: 1 1 auto; width: auto; min-width: 0; }
+.reel-editor .phrase-add .btn { flex: none; }
+/* An empty dir="auto" field falls back to left-to-right; the Hebrew placeholder belongs on the right. */
+.reel-editor .phrase-add .input:placeholder-shown { direction: rtl; text-align: right; }
+.phrase-help { font-size: 0.75rem; color: var(--text-faint); }
+.phrase-suggestions > summary { cursor: pointer; font-size: 0.82rem; color: var(--accent); }
+.phrase-suggestions > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.phrase-suggestions button { border: 1px dashed #cfb3d7; background: #fdf9fe; border-radius: 99px; padding: 4px 11px; font: inherit; font-size: 0.8rem; color: var(--text); cursor: pointer; }
+.phrase-suggestions button:hover { border-style: solid; }
